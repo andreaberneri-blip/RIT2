@@ -900,19 +900,10 @@ select.form-ctrl {
 <div class="section" id="sec-ai">
   <div class="page-head">
     <div class="page-title">Analisi Target con AI</div>
-    <div class="page-sub">Descrivi il tuo cliente ideale e ottieni keyword, pain point, idee contenuto, profili da seguire e pitch personalizzato</div>
+    <div class="page-sub">Descrivi il tuo cliente ideale — genera un prompt ottimizzato da usare su Claude.ai con un click</div>
   </div>
 
-  
-<div id="proxy-status" style="background:#e8f2ec;border:1px solid rgba(26,77,46,0.15);border-radius:8px;padding:11px 16px;margin-bottom:20px;font-size:12px;color:#1a4d2e;display:flex;align-items:center;gap:10px">
-  <span style="font-size:15px">✓</span>
-  <div>
-    <strong>Proxy Netlify attivo</strong> — la API key è protetta nelle variabili d'ambiente del server.<br>
-    <span style="color:#3d4e3d;font-size:11px">Le chiamate passano per <code style="background:#d4eadb;padding:1px 5px;border-radius:3px">/.netlify/functions/claude</code></span>
-  </div>
-  <button onclick="testProxy()" style="margin-left:auto;font-family:inherit;font-size:11px;padding:5px 12px;border-radius:5px;border:1px solid rgba(26,77,46,0.3);background:#fff;color:#1a4d2e;cursor:pointer;white-space:nowrap">Test connessione</button>
-</div>
-<div class="ai-form-wrap">
+  <div class="ai-form-wrap">
     <div class="ai-form">
       <div class="form-title">Descrivi il target</div>
 
@@ -960,22 +951,23 @@ select.form-ctrl {
       </select>
 
       <div style="margin-top:18px">
-        <button class="btn btn-primary" onclick="runAI()">Analizza con AI →</button>
+        <button class="btn btn-primary" onclick="runAI()">Genera prompt →</button>
       </div>
     </div>
 
     <div id="ai-output">
       <div class="ai-result">
         <div class="ai-result-title">Come funziona</div>
-        <p>Compila il form a sinistra e clicca <strong>Analizza con AI</strong> per ottenere:</p>
+        <p>Compila il form e clicca <strong>Genera prompt →</strong></p>
+        <p>Otterrai un prompt ottimizzato con due opzioni:</p>
         <ul>
-          <li>Top 8 keyword Google che cerca questo target</li>
-          <li>Pain point social media specifici</li>
-          <li>3 idee di contenuto Instagram concrete</li>
-          <li>Profili Instagram che quel pubblico segue</li>
-          <li>Pitch di acquisizione pronto all'uso</li>
-          <li>Red flag del cliente difficile</li>
+          <li><strong>Apri su Claude.ai</strong> — si apre direttamente con il prompt precompilato</li>
+          <li><strong>Copia prompt</strong> — incollalo su Claude, ChatGPT, Gemini o qualsiasi AI</li>
         </ul>
+        <p>Il prompt include: keyword Google, pain point social, idee contenuto, profili da seguire, pitch di acquisizione e red flag del cliente difficile.</p>
+        <div style="margin-top:14px;padding:12px 14px;background:var(--green-light);border-radius:6px;font-size:12px;color:var(--green)">
+          <strong>Nessuna API key necessaria</strong> — funziona su qualsiasi hosting statico, incluso GitHub Pages.
+        </div>
       </div>
     </div>
   </div>
@@ -1563,71 +1555,108 @@ function renderChi() {
 }
 
 /* ══════════════ AI TARGET ══════════════ */
-async function runAI() {
+function runAI() {
   const desc = document.getElementById("tgt-desc").value.trim();
   const settore = document.getElementById("tgt-settore").value;
   const budget = document.getElementById("tgt-budget").value;
   const obj = document.getElementById("tgt-obj").value;
   const plat = document.getElementById("tgt-plat").value;
-  if (!desc && !settore) { document.getElementById("ai-output").innerHTML='<div class="ai-result"><p>Compila almeno descrizione o settore.</p></div>'; return; }
-  const budgetMap={low:"200-500€/mese",mid:"500-1500€/mese",high:"1500+€/mese"};
-  const objMap={visibilita:"aumentare visibilità e follower",clienti:"trovare nuovi clienti",branding:"costruire personal brand",vendite:"aumentare vendite",community:"costruire community"};
-  const platMap={instagram:"Instagram",tiktok:"TikTok",linkedin:"LinkedIn",multi:"Multi-piattaforma"};
-  document.getElementById("ai-output").innerHTML='<div class="ai-result"><div class="loading-text"><div class="dot-pulse"><span></span><span></span><span></span></div> Analisi AI in corso...</div></div>';
-  const prompt=`Sei un esperto SMM italiano 2026. Analizza questo target per un'agenzia social media marketing:
-- Descrizione: ${desc||"non specificata"}
-- Settore: ${settore||"non specificato"}
-- Budget: ${budgetMap[budget]}
-- Obiettivo: ${objMap[obj]}
-- Piattaforma: ${platMap[plat]}
 
-Rispondi con queste sezioni esatte:
-## Profilo del target
-## Top 8 keyword Google (formato: "keyword" — ~X.XXX/mese — [intento])
-## Pain point social media (4 punti)
-## Idee contenuto Instagram (3 idee con formato specifico)
-## Profili Instagram da seguire (4-5 profili italiani)
-## Pitch di acquisizione (3-4 righe dirette)
-## Red flag (2-3 segnali cliente difficile)
-
-Sii concreto, usa dati plausibili per l'Italia 2026, orientato all'acquisizione reale.`;
-  try {
-    const resp=await fetch("/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1200,messages:[{role:"user",content:prompt}]})});
-    const data=await resp.json();
-    const txt=data.content?.find(b=>b.type==="text")?.text||"Errore risposta AI.";
-    const html=txt
-      .replace(/## (.+)/g,"<h4>$1</h4>")
-      .replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>")
-      .replace(/^[-•] (.+)/gm,"<li>$1</li>")
-      .replace(/(<li>.*?<\/li>\n?)+/gs,"<ul>$&</ul>")
-      .replace(/\n\n/g,"<br>").replace(/\n/g,"<br>");
-    document.getElementById("ai-output").innerHTML=`<div class="ai-result"><div class="ai-result-title">Analisi target completata</div>${html}</div>`;
-  } catch(e) {
-    document.getElementById("ai-output").innerHTML='<div class="ai-result"><p style="color:var(--coral)"><strong>Errore connessione.</strong><br>Verifica:<br>1. La funzione Netlify <code>claude.js</code> è nella cartella <code>netlify/functions/</code><br>2. La variabile <code>ANTHROPIC_API_KEY</code> è impostata in Netlify → Site configuration → Environment variables<br>3. Il sito è stato ri-deployato dopo aver aggiunto la variabile</p></div>';
+  if (!desc && !settore) {
+    document.getElementById("ai-output").innerHTML = '<div class="ai-result"><p>Compila almeno la descrizione o seleziona un settore.</p></div>';
+    return;
   }
+
+  const budgetMap = {low:"200–500€/mese (entry)",mid:"500–1.500€/mese (PMI)",high:"1.500+€/mese (strutturato)"};
+  const objMap = {visibilita:"aumentare visibilità e follower",clienti:"trovare nuovi clienti",branding:"costruire personal brand",vendite:"aumentare vendite e-commerce",community:"costruire community"};
+  const platMap = {instagram:"Instagram",tiktok:"TikTok",linkedin:"LinkedIn",multi:"multi-piattaforma (Instagram + LinkedIn + TikTok)"};
+
+  const settoreMap = {
+    moda:"Moda / fashion / retail", ristorazione:"Ristorazione / food & beverage",
+    professioni:"Professionisti (avvocati, medici, coach)", ecommerce:"E-commerce / negozio online",
+    artigiani:"Artigiani / PMI locali", immobiliare:"Immobiliare / real estate",
+    benessere:"Benessere / fitness / wellness", tech:"Tech / startup / SaaS",
+    beauty:"Beauty / parrucchieri / estetiste", eventi:"Organizzatori eventi / wedding",
+    lusso:"Lusso / premium brand"
+  };
+
+  const prompt = `Sei un esperto SMM italiano nel 2026. Analizza questo target cliente per un'agenzia social media marketing e fornisci un'analisi pratica e concreta.
+
+PROFILO TARGET:
+- Descrizione: ${desc || "non specificata"}
+- Settore: ${settoreMap[settore] || settore || "non specificato"}
+- Budget mensile stimato: ${budgetMap[budget]}
+- Obiettivo principale: ${objMap[obj]}
+- Piattaforma principale: ${platMap[plat]}
+
+Fornisci l'analisi con queste 7 sezioni esatte:
+
+## 1. Profilo del target
+Chi è, cosa lo preoccupa, perché cerca un SMM adesso.
+
+## 2. Top 8 keyword Google che cerca
+Formato per ciascuna: "keyword esatta" — ~X.XXX/mese — [informazionale / commerciale / transazionale]
+
+## 3. Pain point social media
+I 4 problemi principali che ha sui social e per cui potrebbe assumerti.
+
+## 4. Idee contenuto Instagram
+3 idee specifiche con formato (Reel / Carosello / Story) e angolo narrativo.
+
+## 5. Profili Instagram da seguire
+4–5 profili italiani che questo target segue (con @handle).
+
+## 6. Pitch di acquisizione
+Messaggio diretto di 3–4 righe da usare su Instagram DM o LinkedIn. Specifico, non generico.
+
+## 7. Red flag
+2–3 segnali che questo cliente sarà difficile da gestire.
+
+Usa dati plausibili per l'Italia 2026. Sii operativo e diretto.`;
+
+  const encoded = encodeURIComponent(prompt);
+  const claudeUrl = "https://claude.ai/new?q=" + encoded;
+
+  document.getElementById("ai-output").innerHTML = `
+    <div class="ai-result">
+      <div class="ai-result-title">Prompt pronto — 2 modi per usarlo</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+        <div style="background:var(--green-light);border:1px solid rgba(26,77,46,0.18);border-radius:8px;padding:16px">
+          <div style="font-family:Syne,sans-serif;font-size:13px;font-weight:600;color:var(--green);margin-bottom:8px">Modo 1 — Apri Claude</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Apre direttamente Claude.ai con il prompt già precompilato. Un click e hai l'analisi.</p>
+          <a href="${claudeUrl}" target="_blank" style="display:inline-block;background:var(--green);color:#fff;font-family:Syne,sans-serif;font-size:12px;font-weight:600;padding:9px 16px;border-radius:6px;text-decoration:none;transition:background .15s" onmouseover="this.style.background='#0f3320'" onmouseout="this.style.background='var(--green)'">Apri su Claude.ai →</a>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px">
+          <div style="font-family:Syne,sans-serif;font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">Modo 2 — Copia il prompt</div>
+          <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Copia il testo e incollalo in qualsiasi AI: Claude, ChatGPT, Gemini, ecc.</p>
+          <button onclick="copyPrompt()" id="copy-btn" style="font-family:inherit;font-size:12px;font-weight:500;padding:9px 16px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--text);cursor:pointer;transition:all .15s">Copia prompt</button>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);margin-bottom:8px">Anteprima del prompt generato</div>
+        <div id="prompt-preview" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:14px;font-size:12px;color:var(--text2);line-height:1.6;max-height:220px;overflow-y:auto;white-space:pre-wrap;font-family:monospace">${prompt.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</div>
+      </div>
+
+      <p style="font-size:11px;color:var(--text3)">Il prompt include tutti i parametri che hai configurato. Puoi modificarlo prima di inviarlo.</p>
+    </div>`;
+
+  window._currentPrompt = prompt;
 }
 
-
-async function testProxy() {
-  const btn = event.target;
-  const bar = document.getElementById('proxy-status');
-  btn.textContent = 'Testing...'; btn.disabled = true;
-  try {
-    const r = await fetch('/api/claude', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({messages:[{role:'user',content:'ping'}]})
-    });
-    const d = await r.json();
-    if (d.content || d.error === undefined || r.ok) {
-      bar.style.background = '#e8f2ec'; bar.style.color = '#1a4d2e';
-      bar.querySelector('div').innerHTML = '<strong>Connessione OK</strong> — funzione Netlify raggiungibile e API key configurata.';
-    } else throw new Error(d.error || 'err');
-  } catch(e) {
-    bar.style.background = '#fff1ee'; bar.style.color = '#8b2500';
-    bar.querySelector('div').innerHTML = '<strong>Errore:</strong> ' + e.message + '<br><span style="font-size:11px">Verifica che ANTHROPIC_API_KEY sia nelle variabili d'ambiente Netlify e che il sito sia stato ri-deployato.</span>';
-  }
-  btn.textContent = 'Test connessione'; btn.disabled = false;
+function copyPrompt() {
+  if (!window._currentPrompt) return;
+  navigator.clipboard.writeText(window._currentPrompt).then(() => {
+    const btn = document.getElementById("copy-btn");
+    if (btn) { btn.textContent = "Copiato ✓"; btn.style.color = "var(--green)"; btn.style.borderColor = "var(--green)"; setTimeout(()=>{ btn.textContent="Copia prompt"; btn.style.color=""; btn.style.borderColor=""; }, 2000); }
+  }).catch(() => {
+    const area = document.createElement("textarea");
+    area.value = window._currentPrompt;
+    document.body.appendChild(area); area.select(); document.execCommand("copy"); document.body.removeChild(area);
+    const btn = document.getElementById("copy-btn");
+    if (btn) { btn.textContent = "Copiato ✓"; setTimeout(()=>{ btn.textContent="Copia prompt"; }, 2000); }
+  });
 }
 
 /* ══════════════ INIT ══════════════ */
